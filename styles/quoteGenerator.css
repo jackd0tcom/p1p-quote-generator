@@ -1,0 +1,19 @@
+.quote-generator-table-wrapper {
+  border: 1px solid black;
+  padding: 15px;
+}
+.service-row-head {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+  column-gap: 2rem;
+}
+.service-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+  column-gap: 2rem;
+}
+.service-row-foot {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+  column-gap: 2rem;
+}
