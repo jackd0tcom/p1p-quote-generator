@@ -12,8 +12,31 @@
   grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
   column-gap: 2rem;
 }
+.ultra-premium-row {
+  display: grid;
+  grid-template-columns: 0.1fr 1fr 1fr 1fr 1fr 1fr;
+  column-gap: 2rem;
+}
+.ultra-premium-toggle {
+  width: 10px;
+  height: 10px;
+  border: 1px solid black;
+}
 .service-row-foot {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
   column-gap: 2rem;
+}
+#ultra-premium {
+  display: flex;
+  column-gap: 2rem;
+  align-items: center;
+}
+#ultra-premium-checkbox {
+  width: 10px;
+  height: 10px;
+  border: 1px solid black;
+}
+.show-ultra {
+  background-color: black;
 }
