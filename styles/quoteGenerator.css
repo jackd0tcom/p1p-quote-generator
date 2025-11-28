@@ -14,7 +14,7 @@
 }
 .ultra-premium-row {
   display: grid;
-  grid-template-columns: 0.1fr 1fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 0.1fr 1fr 1fr 1fr 1fr 1fr 1fr;
   column-gap: 2rem;
 }
 .ultra-premium-toggle {
