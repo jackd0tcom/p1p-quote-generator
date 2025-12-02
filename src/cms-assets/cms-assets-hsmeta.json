@@ -1,0 +1,8 @@
+{
+  "uid": "quote-generator",
+  "type": "cms-assets",
+  "config": {
+    "themePath": "my-assets",
+    "secretNames": []
+  }
+}
