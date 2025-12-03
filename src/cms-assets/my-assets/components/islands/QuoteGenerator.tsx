@@ -150,11 +150,24 @@ export default function QuoteGenerator({
   const grandTotal: number =
     linkPriceTotal + contentPriceTotal + premiumTotal + technicalPriceTotal;
 
-  const estimatedLinks: number =
-    rows.reduce((acc, row) => acc + row.estimate * row.quantity, 0) +
-    ultraPremiumRows.reduce((acc, row) => acc + row.estimate * row.quantity, 0);
+  const linkBuildingServicesTotal: number = rows.reduce(
+    (acc, row) => acc + row.estimate * row.quantity,
+    0
+  );
+  const ultraPremiumTotal: number = ultraPremiumRows.reduce(
+    (acc, row) => acc + row.estimate * row.quantity,
+    0
+  );
 
-  const costPerLink: number = linkPriceTotal + premiumTotal / estimatedLinks;
+  const estimatedLinks: number =
+    linkBuildingServicesTotal >= 0
+      ? linkBuildingServicesTotal
+      : 0 + ultraPremiumTotal >= 0
+      ? ultraPremiumTotal
+      : 0;
+
+  const costPerLink: number =
+    estimatedLinks > 0 ? (linkPriceTotal + premiumTotal) / estimatedLinks : 0;
 
   const carat = (state) => {
     return (
