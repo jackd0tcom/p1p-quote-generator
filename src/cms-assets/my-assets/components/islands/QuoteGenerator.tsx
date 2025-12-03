@@ -1,5 +1,8 @@
 import { useState } from "react";
+import { pdf } from "@react-pdf/renderer";
+import React from "react";
 import "../styles/quoteGenerator.css";
+import { QuotePDFDocument } from "./QuotePDFDocument";
 
 interface Service {
   itemName: string;
@@ -46,6 +49,11 @@ export default function QuoteGenerator({
   initialContentServices,
   initialTechnicalServices,
 }: IslandProps): JSX.Element {
+  const [showUltraPremium, setShowUltraPremium] = useState(false);
+  const [monthlyTerm, setMonthlyTerm] = useState(3);
+  const [showLinkBuilding, setShowLinkBuilding] = useState(true);
+  const [showContent, setShowContent] = useState(false);
+  const [showTechincal, setShowTechnical] = useState(false);
   const [rows, setRows] = useState<ServiceItem[]>(() => {
     if (!initialServices) return [];
     return initialServices.map((service) => ({
@@ -80,15 +88,18 @@ export default function QuoteGenerator({
       quantity: 0,
     }));
   });
-  const [showUltraPremium, setShowUltraPremium] = useState(false);
-  const [monthlyTerm, setMonthlyTerm] = useState(3);
 
   const formatDollar = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   });
 
   const updateQuantity = (type: string, index: number, value: number) => {
+    if (value < 0) {
+      return;
+    }
     if (type === "links") {
       setRows((prevRows) => {
         const newRows = [...prevRows];
@@ -145,22 +156,103 @@ export default function QuoteGenerator({
 
   const costPerLink: number = linkPriceTotal + premiumTotal / estimatedLinks;
 
+  const carat = (state) => {
+    return (
+      <svg
+        className={state ? "carat toggled" : "carat"}
+        width="12"
+        height="10"
+        viewBox="0 0 16 14"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M7.49707 0.75C7.68955 0.416895 8.16982 0.416896 8.3623 0.75L15.291 12.75C15.4834 13.0833 15.2423 13.5 14.8574 13.5H1.00195C0.617071 13.5 0.375961 13.0833 0.568359 12.75L7.49707 0.75Z"
+          fill="black"
+          stroke="black"
+        />
+      </svg>
+    );
+  };
+
+  const handleVisibilityToggle = (state, setState) => {
+    if (!state) {
+      setState(true);
+    } else setState(false);
+  };
+
+  const downloadPDF = async () => {
+    try {
+      const doc = (
+        <QuotePDFDocument
+          services={rows}
+          ultraPremiums={ultraPremiumRows}
+          contentServices={contentServiceRows}
+          technicalServices={technicalServiceRows}
+          grandTotal={grandTotal}
+          estimatedLinks={estimatedLinks}
+          monthlyTerm={monthlyTerm}
+          monthlyCost={grandTotal / monthlyTerm}
+          costPerLink={costPerLink}
+        />
+      );
+
+      const asPdf = pdf(doc);
+      const blob = await asPdf.toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const date = new Date().toISOString().split("T")[0];
+      link.download = `quote-${date}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    }
+  };
+
   return (
     <div className="quote-generator-wrapper">
       <div className="quote-generator-header">
-        {/* <h1>Link Building Quote Generator</h1> */}
+        {/* <button
+          onClick={downloadPDF}
+          className="download-pdf-button"
+          type="button"
+        >
+          Download PDF Quote
+        </button> */}
       </div>
       <div className="quote-generator-table-wrapper">
         <div className="service-row-head">
-          <h3 className="rows-container-heading link-building-services">
-            Link Building Services
-          </h3>
-          <p>Qty</p>
-          <p>Price</p>
-          <p>Total</p>
-          <p>Link Estimate</p>
+          <div
+            className="heading-toggle"
+            onClick={() =>
+              handleVisibilityToggle(showLinkBuilding, setShowLinkBuilding)
+            }
+          >
+            {carat(showLinkBuilding)}
+            <h3 className="rows-container-heading link-building-services">
+              Link Building Services
+            </h3>
+          </div>
+          {showLinkBuilding && (
+            <>
+              <p>Qty</p>
+              <p>Price</p>
+              <p>Total</p>
+            </>
+          )}
         </div>
-        <div className="rows-container">
+        <div
+          className={
+            showLinkBuilding
+              ? "rows-container rows-visible"
+              : "rows-container rows-hidden"
+          }
+        >
           {rows.map((row, index) => {
             return (
               <div className="service-row">
@@ -168,78 +260,80 @@ export default function QuoteGenerator({
                 <input
                   className="calculator-input"
                   type="number"
-                  value={row.quantity}
+                  value={row.quantity >= 1 ? row.quantity : ""}
                   onChange={(e) =>
                     updateQuantity("links", index, Number(e.target.value))
                   }
                 />
                 <p>{formatDollar.format(row.price)}</p>
                 <p>{formatDollar.format(row.price * row.quantity)}</p>
-                <p>{row.quantity * row.estimate}</p>
               </div>
             );
           })}
-        </div>
-        <div className="ultra-premium-head">
-          <svg
-            id="ultra-premium-star"
-            className={showUltraPremium ? "show-ultra" : "hide-ultra"}
-            onClick={() => {
-              if (showUltraPremium) {
-                setShowUltraPremium(false);
-              } else setShowUltraPremium(true);
-            }}
-            width="22"
-            height="22"
-            viewBox="0 0 44 42"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M26.1381 14.6565C26.4059 15.4805 27.174 16.0384 28.0405 16.0384H42.3989L30.7827 24.4788C30.0817 24.9881 29.7883 25.8911 30.0561 26.7151L34.4936 40.3714L22.8764 31.9309C22.1754 31.4217 21.2258 31.4217 20.5248 31.9309L8.90765 40.3714L13.3452 26.7151C13.6129 25.8911 13.3196 24.9881 12.6186 24.4788L1.0014 16.0384H15.3608C16.2272 16.0384 16.9954 15.4805 17.2631 14.6565L21.7006 1.00027L26.1381 14.6565Z"
-              stroke="#FAAD18"
-              stroke-width="2"
-            />
-          </svg>
-          <h3 id="ultra-premium">Ultra Premium Links </h3>
-        </div>
-        {showUltraPremium && (
-          <div className="ultra-premium-wrapper">
-            <div className="ultra-premium-row ultra-head">
-              <p></p>
-              <p>Qty</p>
-              <p>Price</p>
-              <p>DR</p>
-              <p>DA</p>
-              <p>Traffic</p>
-              <p>Link Estimate</p>
+          <div className="ultra-premium-row ultra-head">
+            <div
+              className="heading-toggle premium-button"
+              onClick={() =>
+                handleVisibilityToggle(showUltraPremium, setShowUltraPremium)
+              }
+            >
+              {carat(showUltraPremium)}
+              <h4 id="ultra-premium">Ultra Premium Links </h4>
             </div>
-            <div className="rows-container">
-              {ultraPremiumRows.map((row, index) => {
-                return (
-                  <div className="ultra-premium-row">
-                    <p>{row.itemName}</p>
-                    <input
-                      className="calculator-input"
-                      type="number"
-                      value={row.quantity}
-                      onChange={(e) =>
-                        updatePremium(index, Number(e.target.value))
-                      }
-                    />
-                    <p>{formatDollar.format(row.price)}</p>
-                    <p>{row.dr}</p>
-                    <p>{row.da}</p>
-                    <p>{row.traffic}</p>
-                    <p>{row.quantity * row.estimate}</p>
-                  </div>
-                );
-              })}
-            </div>
+            {showUltraPremium && (
+              <>
+                <p>Qty</p>
+                <p>Price</p>
+                <p>DR</p>
+                <p>DA</p>
+                <p>Traffic</p>
+              </>
+            )}
           </div>
-        )}
-        <h3 className="rows-container-heading">Content Services</h3>
-        <div className="rows-container">
+          <div
+            className={
+              showUltraPremium
+                ? "ultra-premium-wrapper rows-visible"
+                : "ultra-premium-wrapper rows-hidden"
+            }
+          >
+            {ultraPremiumRows.map((row, index) => {
+              return (
+                <div className="ultra-premium-row">
+                  <p>{row.itemName}</p>
+                  <input
+                    className="calculator-input"
+                    type="number"
+                    value={row.quantity >= 1 ? row.quantity : ""}
+                    onChange={(e) =>
+                      updatePremium(index, Number(e.target.value))
+                    }
+                  />
+                  <p>{formatDollar.format(row.price)}</p>
+                  <p>{row.dr}</p>
+                  <p>{row.da}</p>
+                  <p>{row.traffic}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <div className="service-row-head">
+          <div
+            className="heading-toggle"
+            onClick={() => handleVisibilityToggle(showContent, setShowContent)}
+          >
+            {carat(showContent)}
+            <h3 className="rows-container-heading">Content Services</h3>
+          </div>
+        </div>
+        <div
+          className={
+            showContent
+              ? "rows-container rows-visible"
+              : "rows-container rows-hidden"
+          }
+        >
           {contentServiceRows.map((row, index) => {
             return (
               <div className="service-row">
@@ -247,7 +341,7 @@ export default function QuoteGenerator({
                 <input
                   className="calculator-input"
                   type="number"
-                  value={row.quantity}
+                  value={row.quantity >= 1 ? row.quantity : ""}
                   onChange={(e) =>
                     updateQuantity("content", index, Number(e.target.value))
                   }
@@ -258,8 +352,24 @@ export default function QuoteGenerator({
             );
           })}
         </div>
-        <h3 className="rows-container-heading">Technical Services</h3>
-        <div className="rows-container">
+        <div className="service-row-head">
+          <div
+            className="heading-toggle"
+            onClick={() =>
+              handleVisibilityToggle(showTechincal, setShowTechnical)
+            }
+          >
+            {carat(showTechincal)}
+            <h3 className="rows-container-heading">Technical Services</h3>
+          </div>
+        </div>
+        <div
+          className={
+            showTechincal
+              ? "rows-container rows-visible"
+              : "rows-container rows-hidden"
+          }
+        >
           {technicalServiceRows.map((row, index) => {
             return (
               <div className="service-row">
@@ -267,7 +377,7 @@ export default function QuoteGenerator({
                 <input
                   className="calculator-input"
                   type="number"
-                  value={row.quantity}
+                  value={row.quantity >= 1 ? row.quantity : ""}
                   onChange={(e) =>
                     updateQuantity("technical", index, Number(e.target.value))
                   }
@@ -297,7 +407,7 @@ export default function QuoteGenerator({
             <p></p>
             <p></p>
             <p>Monthly Term</p>
-            <p>Monthly Cost</p>
+            <p className="monthly">Monthly Cost</p>
             <p>Cost Per Link</p>
           </div>
           <div className="service-row-foot">
@@ -310,7 +420,9 @@ export default function QuoteGenerator({
               value={monthlyTerm}
               onChange={(e) => setMonthlyTerm(Number(e.target.value))}
             />
-            <p>{formatDollar.format(grandTotal / monthlyTerm)}</p>
+            <p className="monthly">
+              {formatDollar.format(grandTotal / monthlyTerm)}
+            </p>
             <p>{!costPerLink ? "$0" : formatDollar.format(costPerLink)}</p>
           </div>
         </div>

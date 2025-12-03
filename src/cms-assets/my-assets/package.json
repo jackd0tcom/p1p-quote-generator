@@ -1,6 +1,8 @@
 {
   "name": "quote-calculator-module",
   "version": "1.0.0",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@react-pdf/renderer": "^4.3.1"
+  }
 }
-
